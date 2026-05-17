@@ -1,0 +1,24 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/
+
+# Secrets and local overrides
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Python cache if any local scripts are used later
+__pycache__/
+*.pyc
+
+# Build and temp outputs
+dist/
+build/
+tmp/
+temp/
+*.log
