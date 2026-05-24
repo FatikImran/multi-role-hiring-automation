@@ -1,0 +1,4 @@
+DOMAIN_PLACEHOLDER {
+    reverse_proxy n8n:5678
+    tls EMAIL_PLACEHOLDER
+}
