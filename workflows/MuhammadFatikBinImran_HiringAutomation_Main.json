@@ -1,0 +1,443 @@
+{
+  "name": "MuhammadFatikBinImran Hiring Automation - Intake and Screening",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 10,
+              "unit": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Poll Applications",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "SWE_SOURCE_SHEET_ID",
+        "sheetName": "Responses",
+        "options": {
+          "returnAll": true,
+          "useHeaderRow": true
+        }
+      },
+      "id": "2",
+      "name": "Read SWE Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [470, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "BDM_SOURCE_SHEET_ID",
+        "sheetName": "Responses",
+        "options": {
+          "returnAll": true,
+          "useHeaderRow": true
+        }
+      },
+      "id": "3",
+      "name": "Read BDM Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [470, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "4",
+      "name": "Combine Applications",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const emailPattern = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\nfunction extractRowNumber(value) {\n  const candidate = Number(value);\n  return Number.isFinite(candidate) && candidate > 0 ? candidate : null;\n}\n\nfunction extractRole(item) {\n  const rawRole = String(item.role || item.applied_role || item.position || item.roleName || '').trim().toUpperCase();\n  if (rawRole.includes('BDM') || rawRole.includes('BUSINESS')) return 'BDM';\n  return 'SWE';\n}\n\nfunction extractResumeUrl(item) {\n  return String(item.resume_url || item.resumeLink || item.resume || item.uploaded_resume || '').trim();\n}\n\nfunction extractName(item) {\n  return String(item.name || item.full_name || item.candidate_name || item.applicant_name || '').trim();\n}\n\nfunction extractEmail(item) {\n  return String(item.email || item.email_address || item.applicant_email || '').trim().toLowerCase();\n}\n\nreturn items.map((entry) => {\n  const source = entry.json;\n  const role = extractRole(source);\n  const name = extractName(source);\n  const email = extractEmail(source);\n  const resumeUrl = extractResumeUrl(source);\n  const sourceRowNumber = extractRowNumber(source.rowNumber || source.row_number || source['Row Number']);\n  const sourceSheetName = role === 'BDM' ? 'Responses' : 'Responses';\n  const sourceDocumentId = role === 'BDM' ? 'BDM_SOURCE_SHEET_ID' : 'SWE_SOURCE_SHEET_ID';\n  const validationIssues = [];\n\n  if (!name) validationIssues.push('missing_name');\n  if (!email || !emailPattern.test(email)) validationIssues.push('invalid_email');\n  if (!resumeUrl) validationIssues.push('missing_resume_url');\n  if (!sourceRowNumber) validationIssues.push('missing_row_number');\n\n  const candidateKey = [role, email || 'unknown-email', sourceRowNumber || 'unknown-row'].join('-');\n\n  return {\n    json: {\n      candidateKey,\n      name,\n      email,\n      role,\n      resumeUrl,\n      sourceRowNumber,\n      sourceSheetName,\n      sourceDocumentId,\n      processed: String(source.processed || source.status || '').toLowerCase() === 'true',\n      validationStatus: validationIssues.length === 0 ? 'valid' : 'invalid',\n      validationIssues: validationIssues.join(', '),\n      hiringManagerEmail: 'hiring-manager@example.com',\n      interviewCalendarId: 'primary',\n      sourceRaw: source\n    }\n  };\n});"
+      },
+      "id": "5",
+      "name": "Normalize and Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.validationStatus}}",
+              "operation": "equal",
+              "value2": "valid"
+            }
+          ]
+        }
+      },
+      "id": "6",
+      "name": "Application Has Minimum Fields",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1180, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "MASTER_CANDIDATE_SHEET_ID",
+        "sheetName": "Candidates",
+        "columnsUi": {
+          "column": [
+            { "column": "candidate_key", "value": "={{$json.candidateKey}}" },
+            { "column": "name", "value": "={{$json.name}}" },
+            { "column": "email", "value": "={{$json.email}}" },
+            { "column": "role", "value": "={{$json.role}}" },
+            { "column": "resume_url", "value": "={{$json.resumeUrl}}" },
+            { "column": "source_sheet", "value": "={{$json.sourceSheetName}}" },
+            { "column": "source_row_number", "value": "={{$json.sourceRowNumber}}" },
+            { "column": "validation_status", "value": "invalid" },
+            { "column": "validation_issues", "value": "={{$json.validationIssues}}" },
+            { "column": "contact_status", "value": "no_action" }
+          ]
+        }
+      },
+      "id": "7",
+      "name": "Write Invalid Candidate Record",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1430, 520],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "={{$json.sourceDocumentId}}",
+        "sheetName": "={{$json.sourceSheetName}}",
+        "rowNumber": "={{$json.sourceRowNumber}}",
+        "columnsUi": {
+          "column": [
+            { "column": "processed", "value": "true" },
+            { "column": "processed_at", "value": "={{$now}}" },
+            { "column": "status_note", "value": "invalid input captured and stored centrally" }
+          ]
+        }
+      },
+      "id": "8",
+      "name": "Mark Invalid Source Row Processed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1680, 520],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractGoogleDriveFileId(url) {\n  const text = String(url || '').trim();\n  const patterns = [\n    /id=([-\\w]{25,})/,\n    /\\/d\\/([-\\w]{25,})/,\n    /file\\/d\\/([-\\w]{25,})/,\n    /([-\\w]{25,})/\n  ];\n\n  for (const pattern of patterns) {\n    const match = text.match(pattern);\n    if (match) return match[1] || match[0];\n  }\n\n  return null;\n}\n\nreturn items.map((entry) => {\n  const resumeFileId = extractGoogleDriveFileId(entry.json.resumeUrl);\n  return {\n    json: {\n      ...entry.json,\n      resumeFileId,\n      screeningPrompt: entry.json.role === 'BDM'\n        ? 'Evaluate a Business Development Manager candidate on client acquisition, pipeline building, commercial judgment, communication, negotiation, ownership, and closing ability.'\n        : 'Evaluate a Software Engineer candidate on problem solving, code quality, system design exposure, ownership, debugging ability, collaboration, and delivery.'\n    }\n  };\n});"
+      },
+      "id": "9",
+      "name": "Prepare Resume Lookup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1430, 260]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{$json.resumeFileId}}"
+      },
+      "id": "10",
+      "name": "Download Resume",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [1680, 260],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "name": "Google Drive OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "data"
+      },
+      "id": "11",
+      "name": "Extract Resume Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1910, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=GEMINI_API_KEY_PLACEHOLDER",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"You are screening a candidate for the role of {{$json.role}}. Use the following role brief: {{$json.screeningPrompt}}. Return strict JSON only with keys score, classification, summary, strengths, concerns, and interview_recommendation. Classification must be one of strong, average, or weak. Resume text: {{$json.text}}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.2\n  }\n}"
+      },
+      "id": "12",
+      "name": "Screen with Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2140, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeParse(text) {\n  if (!text) return null;\n  try {\n    return JSON.parse(text);\n  } catch (error) {\n    const trimmed = String(text).trim();\n    const start = trimmed.indexOf('{');\n    const end = trimmed.lastIndexOf('}');\n    if (start >= 0 && end > start) {\n      try {\n        return JSON.parse(trimmed.slice(start, end + 1));\n      } catch (innerError) {\n        return null;\n      }\n    }\n    return null;\n  }\n}\n\nreturn items.map((entry) => {\n  const response = entry.json;\n  const text = response.candidates?.[0]?.content?.parts?.[0]?.text || response.text || '';\n  const parsed = safeParse(text) || {};\n  const classification = ['strong', 'average', 'weak'].includes(String(parsed.classification || '').toLowerCase())\n    ? String(parsed.classification).toLowerCase()\n    : 'average';\n\n  return {\n    json: {\n      ...entry.json,\n      screeningScore: Number(parsed.score || 0),\n      screeningClassification: classification,\n      screeningSummary: String(parsed.summary || 'AI screening completed without a summary.').trim(),\n      screeningStrengths: String(parsed.strengths || 'No strengths were returned by the model.').trim(),\n      screeningConcerns: String(parsed.concerns || 'No concerns were returned by the model.').trim(),\n      screeningRecommendation: String(parsed.interview_recommendation || 'Review manually.').trim(),\n      contactStatus: 'pending'\n    }\n  };\n});"
+      },
+      "id": "13",
+      "name": "Parse Screening Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2370, 260]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "MASTER_CANDIDATE_SHEET_ID",
+        "sheetName": "Candidates",
+        "columnsUi": {
+          "column": [
+            { "column": "candidate_key", "value": "={{$json.candidateKey}}" },
+            { "column": "name", "value": "={{$json.name}}" },
+            { "column": "email", "value": "={{$json.email}}" },
+            { "column": "role", "value": "={{$json.role}}" },
+            { "column": "resume_url", "value": "={{$json.resumeUrl}}" },
+            { "column": "resume_file_id", "value": "={{$json.resumeFileId}}" },
+            { "column": "score", "value": "={{$json.screeningScore}}" },
+            { "column": "classification", "value": "={{$json.screeningClassification}}" },
+            { "column": "summary", "value": "={{$json.screeningSummary}}" },
+            { "column": "strengths", "value": "={{$json.screeningStrengths}}" },
+            { "column": "concerns", "value": "={{$json.screeningConcerns}}" },
+            { "column": "recommendation", "value": "={{$json.screeningRecommendation}}" },
+            { "column": "contact_status", "value": "={{$json.contactStatus}}" },
+            { "column": "source_sheet", "value": "={{$json.sourceSheetName}}" },
+            { "column": "source_row_number", "value": "={{$json.sourceRowNumber}}" }
+          ]
+        }
+      },
+      "id": "14",
+      "name": "Append Master Candidate",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2630, 260],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "={{$json.sourceDocumentId}}",
+        "sheetName": "={{$json.sourceSheetName}}",
+        "rowNumber": "={{$json.sourceRowNumber}}",
+        "columnsUi": {
+          "column": [
+            { "column": "processed", "value": "true" },
+            { "column": "processed_at", "value": "={{$now}}" },
+            { "column": "status_note", "value": "screened and stored centrally" }
+          ]
+        }
+      },
+      "id": "15",
+      "name": "Mark Source Row Processed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2890, 260],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "name": "Google Sheets OAuth2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Poll Applications": {
+      "main": [
+        [
+          {
+            "node": "Read SWE Applications",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read BDM Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read SWE Applications": {
+      "main": [
+        [
+          {
+            "node": "Combine Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read BDM Applications": {
+      "main": [
+        [
+          {
+            "node": "Combine Applications",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine Applications": {
+      "main": [
+        [
+          {
+            "node": "Normalize and Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize and Validate": {
+      "main": [
+        [
+          {
+            "node": "Application Has Minimum Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Application Has Minimum Fields": {
+      "main": [
+        [
+          {
+            "node": "Prepare Resume Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Invalid Candidate Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Invalid Candidate Record": {
+      "main": [
+        [
+          {
+            "node": "Mark Invalid Source Row Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Resume Lookup": {
+      "main": [
+        [
+          {
+            "node": "Download Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Resume": {
+      "main": [
+        [
+          {
+            "node": "Extract Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Resume Text": {
+      "main": [
+        [
+          {
+            "node": "Screen with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Screen with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Parse Screening Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Screening Result": {
+      "main": [
+        [
+          {
+            "node": "Append Master Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append Master Candidate": {
+      "main": [
+        [
+          {
+            "node": "Mark Source Row Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "versionId": "1"
+}
