@@ -894,7 +894,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return items.map((entry) => {\n  const start = new Date();\n  start.setDate(start.getDate() + 2);\n  start.setHours(10, 0, 0, 0);\n  const end = new Date(start.getTime() + 30 * 60 * 1000);\n\n  return {\n    json: {\n      ...entry.json,\n      interviewStart: start.toISOString(),\n      interviewEnd: end.toISOString()\n    }\n  };\n});"
+        "jsCode": "const items = $input.all();\n\nreturn items.map((entry, index) => {\n  const start = new Date();\n  start.setDate(start.getDate() + 2);\n  start.setHours(10, 0, 0, 0);\n\n  // Stagger each strong candidate by 30 minutes\n  start.setMinutes(start.getMinutes() + index * 30);\n\n  const end = new Date(start.getTime() + 30 * 60 * 1000);\n\n  return {\n    json: {\n      ...entry.json,\n      interviewStart: start.toISOString(),\n      interviewEnd: end.toISOString(),\n    },\n  };\n});"
       },
       "id": "21c1cf5e-7192-4c87-bc21-142bd7f38d4d",
       "name": "Prepare Interview Event",
@@ -909,7 +909,7 @@
       "parameters": {
         "sendTo": "={{$json.email}}",
         "subject": "=Interview Invitation - {{$json.name}}",
-        "message": "=<p>Dear {{$json.name}},</p><p>We reviewed your application for the {{$json.role}} position and would like to invite you to the next step of the process.</p><p>Your profile was assessed as <strong>{{$json.classification}}</strong>.</p><p>We will follow up with the interview calendar invitation shortly. Please reply if you need to reschedule.</p><p>Kind regards,<br>Trilles AI Hiring Team</p>",
+        "message": "=<p>Dear {{$json.name}},</p>\n<p>We reviewed your application for the {{$json.role}} role and would like to invite you to the next step of the process.</p>\n<p><strong>Interview time:</strong><br>\n{{$json.interviewStart}}<br>\n{{$json.interviewEnd}}</p>\n<p>Your profile was assessed as <strong>{{$json.classification}}</strong>.</p>\n<p>We will follow up with the interview calendar invitation shortly. Please reply if you need to reschedule.</p>\n<p>Kind regards,<br>Trilles AI Hiring Team</p>",
         "options": {}
       },
       "id": "030d4654-9303-4513-9c90-81574729d370",
@@ -937,7 +937,13 @@
         },
         "start": "={{$json.interviewStart}}",
         "end": "={{$json.interviewEnd}}",
-        "additionalFields": {}
+        "additionalFields": {
+          "attendees": [
+            "={{$json.email}}"
+          ],
+          "description": "=Candidate: {{$json.name}}\\nEmail: {{$json.email}}\\nRole: {{$json.role}}",
+          "summary": "=Interview - {{$json.name}} ({{$json.role}})"
+        }
       },
       "id": "48e50ddc-9c0f-4787-916d-b369924ae9b5",
       "name": "Create Interview Event",
@@ -957,13 +963,288 @@
     {
       "parameters": {
         "operation": "update",
-        "documentId": "1RzOT1YYAnwRZr9cqC6IAYwHVF32RHWMRcrdKAlVek70",
-        "sheetName": "Candidates",
+        "documentId": {
+          "__rl": true,
+          "value": "1RzOT1YYAnwRZr9cqC6IAYwHVF32RHWMRcrdKAlVek70",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Candidates",
+          "mode": "name"
+        },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
-          "schema": [],
+          "value": {
+            "candidate_key": "={{ $json.candidate_key }}",
+            "contact_status": "contacted"
+          },
+          "matchingColumns": [
+            "candidate_key"
+          ],
+          "schema": [
+            {
+              "id": "candidate_key",
+              "displayName": "candidate_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resume_url",
+              "displayName": "resume_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resume_file_id",
+              "displayName": "resume_file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "classification",
+              "displayName": "classification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "strengths",
+              "displayName": "strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "concerns",
+              "displayName": "concerns",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "recommendation",
+              "displayName": "recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contact_status",
+              "displayName": "contact_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source_sheet",
+              "displayName": "source_sheet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source_row_number",
+              "displayName": "source_row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "candidateKey",
+              "displayName": "candidateKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resumeUrl",
+              "displayName": "resumeUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourceSheetName",
+              "displayName": "sourceSheetName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourceDocumentId",
+              "displayName": "sourceDocumentId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "processed",
+              "displayName": "processed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "validationStatus",
+              "displayName": "validationStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "validationIssues",
+              "displayName": "validationIssues",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hiringManagerEmail",
+              "displayName": "hiringManagerEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interviewCalendarId",
+              "displayName": "interviewCalendarId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourceRaw",
+              "displayName": "sourceRaw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         },
@@ -974,7 +1255,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        1616,
+        1840,
         720
       ],
       "credentials": {
@@ -987,8 +1268,8 @@
     {
       "parameters": {
         "sendTo": "={{$json.hiringManagerEmail}}",
-        "subject": "Manual review required - {{$json.name}} ({{$json.role}})",
-        "message": "=<p>Hello Hiring Team,</p><p>A candidate for the <strong>{{$json.role}}</strong> role has been scored as <strong>{{$json.classification}}</strong> and should be reviewed manually.</p><p><strong>Name:</strong> {{$json.name}}<br><strong>Email:</strong> {{$json.email}}<br><strong>Score:</strong> {{$json.score}}</p><p><strong>Summary:</strong> {{$json.summary}}</p><p><strong>Concerns:</strong> {{$json.concerns}}</p><p>Please review the candidate record in the master sheet.</p><p>Regards,<br>Trilles AI Automation</p>",
+        "subject": "=Manual review required - {{$json.name}} ({{$json.role}})",
+        "message": "=<p>Hello Hiring Team,</p><p>A candidate for the <strong>{{$json.role}}</strong> role has been scored as <strong>{{$json.classification}}</strong> and should be reviewed manually.</p><p><strong>Name:</strong> {{$json.name}}<br><strong>Email:</strong> {{$json.email}}<br></p><p><strong>Summary:</strong> {{$json.summary}}</p><p><strong>Concerns:</strong> {{$json.concerns}}</p><p>Please review the candidate record in the master sheet.</p><p>Regards,<br>Trilles AI Automation</p>",
         "options": {}
       },
       "id": "8f19201d-e274-45d8-bd88-4618e2273766",
@@ -1023,7 +1304,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "contact_status": "contacted"
+            "contact_status": "contacted",
+            "candidate_key": "={{ $json.candidate_key }}"
           },
           "matchingColumns": [
             "candidate_key"
@@ -1301,8 +1583,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        1200,
-        784
+        1456,
+        864
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1337,11 +1619,289 @@
     {
       "parameters": {
         "operation": "update",
-        "documentId": "1RzOT1YYAnwRZr9cqC6IAYwHVF32RHWMRcrdKAlVek70",
-        "sheetName": "Candidates",
+        "documentId": {
+          "__rl": true,
+          "value": "1RzOT1YYAnwRZr9cqC6IAYwHVF32RHWMRcrdKAlVek70",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Candidates",
+          "mode": "name"
+        },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {}
+          "value": {
+            "contact_status": "contacted",
+            "candidate_key": "={{ $json.candidate_key }}"
+          },
+          "matchingColumns": [
+            "candidate_key"
+          ],
+          "schema": [
+            {
+              "id": "candidate_key",
+              "displayName": "candidate_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "role",
+              "displayName": "role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resume_url",
+              "displayName": "resume_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resume_file_id",
+              "displayName": "resume_file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "classification",
+              "displayName": "classification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "strengths",
+              "displayName": "strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "concerns",
+              "displayName": "concerns",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "recommendation",
+              "displayName": "recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "contact_status",
+              "displayName": "contact_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_sheet",
+              "displayName": "source_sheet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source_row_number",
+              "displayName": "source_row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "candidateKey",
+              "displayName": "candidateKey",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "resumeUrl",
+              "displayName": "resumeUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourceSheetName",
+              "displayName": "sourceSheetName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourceDocumentId",
+              "displayName": "sourceDocumentId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "processed",
+              "displayName": "processed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "validationStatus",
+              "displayName": "validationStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "validationIssues",
+              "displayName": "validationIssues",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "hiringManagerEmail",
+              "displayName": "hiringManagerEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interviewCalendarId",
+              "displayName": "interviewCalendarId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sourceRaw",
+              "displayName": "sourceRaw",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         },
         "options": {}
       },
@@ -1350,8 +1910,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        1200,
-        992
+        1456,
+        1056
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -2503,7 +3063,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const sentItems = $input.all();\nconst preparedItems = $items(\"Prepare Interview Event\");\n\nreturn sentItems.map((item, index) => {\n  const context = preparedItems[index]?.json || {};\n  return {\n    json: {\n      ...context,\n      ...item.json,\n    },\n    binary: item.binary,\n  };\n});"
+        "jsCode": "const calendarItems = $input.all();\nconst preparedItems = $items(\"Prepare Interview Event\");\n\nreturn calendarItems.map((item, index) => {\n  const context = preparedItems[index]?.json || {};\n  return {\n    json: {\n      ...context,\n      ...item.json,\n    },\n    binary: item.binary,\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2513,6 +3073,71 @@
       ],
       "id": "225785ef-ca56-4c0b-ae0f-064f4946ccd1",
       "name": "Restore Interview Event Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentItems = $input.all();\nconst sourceItems = $items(\"Filter Pending Candidates\");\n\nreturn sentItems.map((item, index) => {\n  const context = sourceItems[index]?.json || {};\n  return {\n    json: {\n      ...context,\n      ...item.json,\n    },\n    binary: item.binary,\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        656
+      ],
+      "id": "14c6838f-ef15-4792-ab2d-c4e439b3f21b",
+      "name": "Restore Context before Mark Strong Contacted"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentItems = $input.all();\nconst sourceItems = $items(\"Stash Weak Context\");\n\nreturn sentItems.map((item, index) => {\n  const context = sourceItems[index]?.json || {};\n  return {\n    json: {\n      ...context,\n      ...item.json,\n    },\n    binary: item.binary,\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        1024
+      ],
+      "id": "9ea1a14c-b810-48c6-b3fc-a1497ef4924d",
+      "name": "Restore Context before Mark Weak Contacted"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentItems = $input.all();\nconst sourceItems = $items(\"Stash Average Context\");\n\nreturn sentItems.map((item, index) => {\n  const context = sourceItems[index]?.json || {};\n  return {\n    json: {\n      ...context,\n      ...item.json,\n    },\n    binary: item.binary,\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        816
+      ],
+      "id": "1340c31c-f3be-4195-802b-61a258264e80",
+      "name": "Restore Context before Mark Average Contacted"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: { ...item.json },\n  binary: item.binary,\n}));"
+      },
+      "id": "68903e00-3bbf-418f-8fa5-bee149cf5a2c",
+      "name": "Stash Average Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: { ...item.json },\n  binary: item.binary,\n}));"
+      },
+      "id": "fbe9a138-a156-4ee0-bd43-a0ed24250bd1",
+      "name": "Stash Weak Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        944
+      ]
     }
   ],
   "pinData": {},
@@ -2720,7 +3345,7 @@
       "main": [
         [
           {
-            "node": "Mark Strong Contacted",
+            "node": "Restore Context before Mark Strong Contacted",
             "type": "main",
             "index": 0
           }
@@ -2742,7 +3367,7 @@
       "main": [
         [
           {
-            "node": "Mark Average Contacted",
+            "node": "Restore Context before Mark Average Contacted",
             "type": "main",
             "index": 0
           }
@@ -2753,7 +3378,7 @@
       "main": [
         [
           {
-            "node": "Mark Weak Contacted",
+            "node": "Restore Context before Mark Weak Contacted",
             "type": "main",
             "index": 0
           }
@@ -2844,14 +3469,14 @@
         ],
         [
           {
-            "node": "Send Manager Review Email",
+            "node": "Stash Average Context",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Send Rejection Email",
+            "node": "Stash Weak Context",
             "type": "main",
             "index": 0
           }
@@ -2937,6 +3562,61 @@
           }
         ]
       ]
+    },
+    "Restore Context before Mark Strong Contacted": {
+      "main": [
+        [
+          {
+            "node": "Mark Strong Contacted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Context before Mark Weak Contacted": {
+      "main": [
+        [
+          {
+            "node": "Mark Weak Contacted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Context before Mark Average Contacted": {
+      "main": [
+        [
+          {
+            "node": "Mark Average Contacted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stash Average Context": {
+      "main": [
+        [
+          {
+            "node": "Send Manager Review Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stash Weak Context": {
+      "main": [
+        [
+          {
+            "node": "Send Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -2944,7 +3624,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "4cf83004-7723-42e8-b77d-4b9581794f17",
+  "versionId": "a4c6f183-1cf0-4ba5-90c4-a9a5dc258103",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "adb454e8d407ff39c4882dfd212bcf22405733f50788e23b75c65c6c135ac0aa"
